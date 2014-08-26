@@ -340,7 +340,7 @@ FORCE_INLINE int LZ4_NbCommonBytes (register U32 val)
 #endif
 
 
-int LZ4_sizeofStreamStateHC()
+int LZ4_sizeofStreamStateHC(void)
 {
     return sizeof(LZ4HC_Data_Structure);
 }
@@ -842,7 +842,7 @@ int LZ4_compressHC_limitedOutput(const char* source, char* dest, int inputSize, 
 /*****************************
    Using external allocation
 *****************************/
-int LZ4_sizeofStateHC() { return sizeof(LZ4HC_Data_Structure); }
+int LZ4_sizeofStateHC(void) { return sizeof(LZ4HC_Data_Structure); }
 
 
 int LZ4_compressHC2_withStateHC (void* state, const char* source, char* dest, int inputSize, int compressionLevel)

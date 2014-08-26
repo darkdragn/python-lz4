@@ -176,7 +176,7 @@ typedef struct { unsigned int table[LZ4_STREAMSIZE_U32]; } LZ4_stream_t;
  * provides a pointer (void*) towards an initialized LZ4_stream_t structure.
  * LZ4_free just frees it.
  */
-void* LZ4_createStream();
+void* LZ4_createStream(void);
 int   LZ4_free (void* LZ4_stream);
 
 
@@ -234,7 +234,7 @@ typedef struct { unsigned int table[LZ4_STREAMDECODESIZE_U32]; } LZ4_streamDecod
  * provides a pointer (void*) towards an initialized LZ4_streamDecode_t structure.
  * LZ4_free just frees it.
  */
-void* LZ4_createStreamDecode();
+void* LZ4_createStreamDecode(void);
 int   LZ4_free (void* LZ4_stream);   /* yes, it's the same one as for compression */
 
 /*
