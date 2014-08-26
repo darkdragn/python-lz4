@@ -684,7 +684,7 @@ int LZ4_compress_limitedOutput(const char* source, char* dest, int inputSize, in
    Experimental : Streaming functions
 *****************************************/
 
-void* LZ4_createStream()
+void* LZ4_createStream(void)
 {
     void* lz4s = ALLOCATOR(4, LZ4_STREAMSIZE_U32);
     MEM_INIT(lz4s, 0, LZ4_STREAMSIZE);
@@ -1074,7 +1074,7 @@ typedef struct
  * LZ4_createStreamDecode()
  * provides a pointer (void*) towards an initialized LZ4_streamDecode_t structure.
  */
-void* LZ4_createStreamDecode()
+void* LZ4_createStreamDecode(void)
 {
     void* lz4s = ALLOCATOR(sizeof(U32), LZ4_STREAMDECODESIZE_U32);
     MEM_INIT(lz4s, 0, LZ4_STREAMDECODESIZE);

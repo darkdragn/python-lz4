@@ -62,6 +62,7 @@ static PyObject *compress_with(compressor compress, PyObject *self, PyObject *ar
     char *dest;
     int dest_size;
 
+    (void)self; 
     if (!PyArg_ParseTuple(args, "s#", &source, &source_size))
         return NULL;
 
@@ -99,6 +100,7 @@ static PyObject *py_lz4_uncompress(PyObject *self, PyObject *args) {
     int source_size;
     uint32_t dest_size;
 
+    (void)self; 
     if (!PyArg_ParseTuple(args, "s#", &source, &source_size)) {
         return NULL;
     }
