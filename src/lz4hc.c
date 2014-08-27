@@ -340,7 +340,7 @@ FORCE_INLINE int LZ4_NbCommonBytes (register U32 val)
 #endif
 
 
-int LZ4_sizeofStreamStateHC(void)
+int LZ4_sizeofStreamStateHC()
 {
     return sizeof(LZ4HC_Data_Structure);
 }
@@ -400,7 +400,10 @@ FORCE_INLINE void LZ4HC_Insert (LZ4HC_Data_Structure* hc4, const BYTE* ip)
 char* LZ4_slideInputBufferHC(void* LZ4HC_Data)
 {
     LZ4HC_Data_Structure* hc4 = (LZ4HC_Data_Structure*)LZ4HC_Data;
-    U32 distance = (U32)(hc4->end - hc4->inputBuffer) - 64 KB;
+    size_t distance = (hc4->end - 64 KB) - hc4->inputBuffer;
+
+    if (hc4->end <= hc4->inputBuffer + 64 KB) return (char*)(hc4->end);   /* no update : less than 64KB within buffer */
+
     distance = (distance >> 16) << 16;   /* Must be a multiple of 64 KB */
     LZ4HC_Insert(hc4, hc4->end - MINMATCH);
     memcpy((void*)(hc4->end - 64 KB - distance), (const void*)(hc4->end - 64 KB), 64 KB);
@@ -842,7 +845,7 @@ int LZ4_compressHC_limitedOutput(const char* source, char* dest, int inputSize, 
 /*****************************
    Using external allocation
 *****************************/
-int LZ4_sizeofStateHC(void) { return sizeof(LZ4HC_Data_Structure); }
+int LZ4_sizeofStateHC() { return sizeof(LZ4HC_Data_Structure); }
 
 
 int LZ4_compressHC2_withStateHC (void* state, const char* source, char* dest, int inputSize, int compressionLevel)
