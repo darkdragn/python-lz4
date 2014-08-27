@@ -3,7 +3,7 @@
 
 from setuptools import setup, find_packages, Extension
 
-VERSION = (0, 7, 0)
+VERSION = (0, 7, 5)
 VERSION_STR = ".".join([str(x) for x in VERSION])
 
 setup(
@@ -20,6 +20,8 @@ setup(
         Extension('lz4', [
             'src/lz4.c',
             'src/lz4hc.c',
+            'src/lz4io.c',
+            'src/xxhash.c',
             'src/python-lz4.c'
         ], extra_compile_args=[
             "-std=c99",
