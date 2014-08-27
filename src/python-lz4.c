@@ -130,7 +130,7 @@ static PyObject *py_lz4_uncompress(PyObject *self, PyObject *args) {
 }
 
 
-static PyObject *py_lz4_compressFile(PyObject *self, PyObject *args) {
+static PyObject *py_lz4_compressFileDefault(PyObject *self, PyObject *args) {
     char* input;
     char* output;
     int compLevel;
@@ -149,7 +149,7 @@ static PyObject *py_lz4_compressFile(PyObject *self, PyObject *args) {
 }
 
 
-static PyObject *py_lz4_decompressFile(PyObject *self, PyObject *args) {
+static PyObject *py_lz4_decompressFileDefault(PyObject *self, PyObject *args) {
     char* input;
     char* output;
     int outLen;
@@ -159,10 +159,12 @@ static PyObject *py_lz4_decompressFile(PyObject *self, PyObject *args) {
         return NULL;
     }
     
-    outLen = strlen(input)-3;
-    output = (char*)malloc(outLen);
-    strncpy(output, input, outLen-1);
-    output[outLen] = '\0';
+    outLen=strlen(input) - 4;
+    output = (char*)calloc(outLen, sizeof(char));
+    strncpy(output, input, outLen);
+//    output[outLen] = '\0';
+    
+    printf("%s \n", output);
 
     LZ4IO_decompressFilename(input, output);
     return Py_None;
@@ -178,8 +180,8 @@ static PyMethodDef Lz4Methods[] = {
     {"decompress",  py_lz4_uncompress, METH_VARARGS, UNCOMPRESS_DOCSTRING},
     {"dumps",  py_lz4_compress, METH_VARARGS, COMPRESS_DOCSTRING},
     {"loads",  py_lz4_uncompress, METH_VARARGS, UNCOMPRESS_DOCSTRING},
-    {"compressFile", py_lz4_compressFile, METH_VARARGS, NULL},
-    {"decompressFile", py_lz4_decompressFile, METH_VARARGS, NULL},
+    {"compressFileDefault", py_lz4_compressFileDefault, METH_VARARGS, COMPRESS_FILE_DOCSTRING},
+    {"decompressFileDefault", py_lz4_decompressFileDefault, METH_VARARGS, DECOMPRESS_FILE_DOCSTRING},
     {NULL, NULL, 0, NULL}
 };
 
