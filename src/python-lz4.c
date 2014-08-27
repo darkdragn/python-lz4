@@ -162,7 +162,6 @@ static PyObject *py_lz4_decompressFileDefault(PyObject *self, PyObject *args) {
     outLen=strlen(input) - 4;
     output = (char*)calloc(outLen, sizeof(char));
     strncpy(output, input, outLen);
-//    output[outLen] = '\0';
     
     printf("%s \n", output);
 
