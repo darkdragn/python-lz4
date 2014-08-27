@@ -3,25 +3,23 @@
 
 from setuptools import setup, find_packages, Extension
 
-VERSION = (0, 7, 5)
+VERSION = (0, 8, 0)
 VERSION_STR = ".".join([str(x) for x in VERSION])
 
 setup(
     name='lz4',
     version=VERSION_STR,
-    description="LZ4 Bindings for Python",
+    description="LZ4 Bindings for Python, fresh with lz4io",
     long_description=open('README.rst', 'r').read(),
-    author='Steeve Morin',
-    author_email='steeve.morin@gmail.com',
-    url='https://github.com/steeve/python-lz4',
+    author='Christopher Jackson',
+    author_email='darkdragn.cj@gmail.com',
+    url='https://github.com/darkdragn/python-lz4',
     packages=find_packages('src'),
     package_dir={'': 'src'},
     ext_modules=[
         Extension('lz4', [
             'src/lz4.c',
             'src/lz4hc.c',
-            'src/lz4io.c',
-            'src/xxhash.c',
             'src/python-lz4.c'
         ], extra_compile_args=[
             "-std=c99",
@@ -30,7 +28,7 @@ setup(
             "-W",
             "-Wundef",
             "-DVERSION=\"%s\"" % VERSION_STR,
-            "-DLZ4_VERSION=\"r119\"",
+            "-DLZ4_VERSION=\"r121\"",
         ])
     ],
     setup_requires=["nose>=1.0"],
