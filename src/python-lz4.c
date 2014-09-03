@@ -32,6 +32,7 @@
 #include <Python.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 #include <math.h>
 #include "lz4.h"
@@ -54,6 +55,16 @@ static inline uint32_t load_le32(const char *c) {
     const uint8_t *d = (const uint8_t *)c;
     return d[0] | (d[1] << 8) | (d[2] << 16) | (d[3] << 24);
 }
+
+static inline char* *add_extension(char *input) {
+    char* output;
+
+    output = (char*)malloc(strlen(input)+4);
+    strcpy(output, input);
+    strcat(output, ".lz4");
+
+    return output;
+    }
 
 static const int hdr_size = sizeof(uint32_t);
 
@@ -129,25 +140,58 @@ static PyObject *py_lz4_uncompress(PyObject *self, PyObject *args) {
     return result;
 }
 
-
 static PyObject *py_lz4_compressFileDefault(PyObject *self, PyObject *args) {
     char* input;
-    char* output;
-    int compLevel;
+    char* *output;
+    int compLevel = NULL;
     
     (void)self;
-    if (!PyArg_ParseTuple(args, "si", &input, &compLevel)) {
+    if (!PyArg_ParseTuple(args, "s|i", &input, &compLevel)) {
         return NULL;
     }
     
-    output = (char*)malloc(strlen(input)+4);
-    strcpy(output, input);
-    strcat(output, ".lz4");
+    if (compLevel) {
+        printf("%s", "It's not null anymore!\n");
+    }
     
+    output = add_extension(input);
     LZ4IO_compressFilename(input, output, compLevel);
+
     return Py_None;
 }
 
+static PyObject *py_lz4_compressFileAdvanced(PyObject *self, PyObject *args, PyObject *keywds) {
+    char* input;
+    char* *output = NULL;
+    int compLevel = NULL;
+    int overwrite = NULL;
+
+    int blockSizeID = NULL;
+    int blockMode = NULL;
+    int blockCheck = NULL;
+    int streamCheck = NULL;
+
+    int verbosity = NULL;
+
+    static char *kwlist[] = {"input", "output", "compLevel", "overwrite", 
+                             "blockSizeID", "blockMode", "blockCheck", 
+                             "streamCheck", "verbosity"};
+    (void)self;
+    if (!PyArg_ParseTupleAndKeywords(args, keywds, "ssi|iiiiii", &input, 
+                                     &output, &compLevel, &overwrite, 
+                                     &blockSizeID, &blockMode, &blockCheck,
+                                     &streamCheck, &verbosity))             
+    {
+        return NULL;
+    }
+    
+    if (output == NULL) {
+        output = add_extension(input);
+    }
+    LZ4IO_compressFilename(input, output, compLevel);
+
+    return Py_None;
+}
 
 static PyObject *py_lz4_decompressFileDefault(PyObject *self, PyObject *args) {
     char* input;
@@ -163,12 +207,10 @@ static PyObject *py_lz4_decompressFileDefault(PyObject *self, PyObject *args) {
     output = (char*)calloc(outLen, sizeof(char));
     strncpy(output, input, outLen);
     
-    printf("%s \n", output);
-
     LZ4IO_decompressFilename(input, output);
+
     return Py_None;
 }
-
 
 static PyMethodDef Lz4Methods[] = {
     {"LZ4_compress",  py_lz4_compress, METH_VARARGS, COMPRESS_DOCSTRING},
@@ -208,7 +250,6 @@ static int myextension_clear(PyObject *m) {
     Py_CLEAR(GETSTATE(m)->error);
     return 0;
 }
-
 
 static struct PyModuleDef moduledef = {
         PyModuleDef_HEAD_INIT,
