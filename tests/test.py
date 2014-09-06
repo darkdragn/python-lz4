@@ -24,8 +24,8 @@ class TestLZ4(unittest.TestCase):
         testNames.append('testHold/test.%d.lz4' % num)
       
       lz4.compressFileAdv(fileName, 9, output=testNames[0])
-      lz4.compressFileAdv(fileName, 9, output=testNames[1], blockSizeID=4)
-      lz4.compressFileAdv(fileName, 9, output=testNames[2], blockSizeID=7)
+      lz4.compressFileAdv(fileName, 9, output=testNames[1], blockMode=0)
+      lz4.compressFileAdv(fileName, 9, output=testNames[2], blockSizeID=4)
       lz4.compressFileAdv(fileName, 9, output=testNames[3], blockCheck=1)
       lz4.compressFileAdv(fileName, 9, output=testNames[4], streamCheck=0)
       
