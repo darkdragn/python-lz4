@@ -45,6 +45,7 @@
 
 typedef int (*compressor)(const char *source, char *dest, int isize);
 
+static int          LZ4S_GetBlockSize_FromBlockId (int id) { return (1 << (8 + (2 * id))); }
 static inline void store_le32(char *c, uint32_t x) {
     c[0] = x & 0xff;
     c[1] = (x >> 8) & 0xff;
@@ -121,7 +122,7 @@ static PyTypeObject Lz4sd_t_Type = {
     0,                         /*tp_getattro*/
     0,                         /*tp_setattro*/
     0,                         /*tp_as_buffer*/
-    Py_TPFLAGS_DEFAULT, /*tp_flags*/
+    Py_TPFLAGS_DEFAULT,        /*tp_flags*/
     "Lz4sd_t for decode_continue",           /* tp_doc */
     0,		                   /* tp_traverse */
     0,		                   /* tp_clear */
@@ -139,7 +140,7 @@ static PyTypeObject Lz4sd_t_Type = {
     0,                         /* tp_dictoffset */
     0,                         /* tp_init */
     0,                         /* tp_alloc */
-    Lz4sd_t_new,                         /* tp_new */
+    Lz4sd_t_new,               /* tp_new */
     0,                         /* tp_free */ 
     0,                         /* tp_is_gc*/
     0,                         /* tp_bases*/
@@ -223,6 +224,51 @@ static PyObject *py_lz4_uncompress(PyObject *self, PyObject *args) {
     return result;
 }
 
+static PyObject *py_lz4_uncompress_continue(PyObject *self, PyObject *args, PyObject *keywds) {
+    PyObject *result;
+    PyObject *lz4sd_t;
+    LZ4_streamDecode_t temp;
+    Lz4sd_t *temp2;
+    const char *source;
+    int source_size;
+    uint32_t dest_size;
+    int blkID=7;
+    static char *kwlist[] = {"source", "lz4sd", "blkID"};
+
+    (void)self;
+    if (!PyArg_ParseTupleAndKeywords(args, keywds, "s#O|i", kwlist, &source, 
+                                     &source_size, &lz4sd_t, &blkID)) {
+        return NULL;
+    }
+
+    if (source_size < hdr_size) {
+        PyErr_SetString(PyExc_ValueError, "input too short");
+        return NULL;
+    }
+
+    dest_size = LZ4S_GetBlockSize_FromBlockId(blkID);
+    //dest_size=load_le32(source);
+    if (dest_size > INT_MAX) {
+        PyErr_Format(PyExc_ValueError, "invalid size in header: 0x%x", dest_size);
+        return NULL;
+    }
+    temp2=(Lz4sd_t *)lz4sd_t;
+    temp = temp2->lz4sd;
+    //result = PyBytes_FromStringAndSize(NULL, dest_size);
+    if (/*result != NULL && */dest_size > 0) {
+        char* dest = (char*)malloc(dest_size);
+        int osize = LZ4_decompress_safe_continue(&temp, source, dest, source_size, dest_size);
+        printf("%i\n", osize);
+        result = PyBytes_FromStringAndSize(dest, osize);
+        if (osize < 0) {
+            PyErr_Format(PyExc_ValueError, "corrupt input at byte %d", -osize);
+            Py_CLEAR(result);
+        }
+    }
+
+    return result;
+}
+
 static PyObject *py_lz4_compressFileDefault(PyObject *self, PyObject *args) {
     char* input;
     char* output = NULL;
@@ -271,8 +317,8 @@ static PyObject *py_lz4_compressFileAdv(PyObject *self, PyObject *args, \
     }
     
     if (!output) { output = add_extension(input); }
-    (overwrite!=0 && overwrite!=1) ? throwWarn(oMsg) : \
-                                     (void)LZ4IO_setOverwrite(overwrite);
+    (overwrite == 0 && overwrite == 1) ? (void)LZ4IO_setOverwrite(overwrite) : \
+                                         throwWarn(oMsg);
     (3 < blockSizeID && blockSizeID < 8) ? (void)LZ4IO_setBlockSizeID(blockSizeID) : \
                                            throwWarn(bsMsg);
     (blockCheck == 0 || blockCheck == 1) ? (void)LZ4IO_setBlockChecksumMode(blockCheck) : \
@@ -314,6 +360,7 @@ static PyMethodDef Lz4Methods[] = {
     {"compress",  py_lz4_compress, METH_VARARGS, COMPRESS_DOCSTRING},
     {"compressHC",  py_lz4_compressHC, METH_VARARGS, COMPRESSHC_DOCSTRING},
     {"uncompress",  py_lz4_uncompress, METH_VARARGS, UNCOMPRESS_DOCSTRING},
+    {"uncompress_continue",  (PyCFunction)py_lz4_uncompress_continue, METH_VARARGS | METH_KEYWORDS, UNCOMPRESS_DOCSTRING},
     {"decompress",  py_lz4_uncompress, METH_VARARGS, UNCOMPRESS_DOCSTRING},
     {"dumps",  py_lz4_compress, METH_VARARGS, COMPRESS_DOCSTRING},
     {"loads",  py_lz4_uncompress, METH_VARARGS, UNCOMPRESS_DOCSTRING},
@@ -382,7 +429,6 @@ void initlz4(void)
     }
     st = GETSTATE(module);
 
-    //Lz4sd_t_Type.tp_new = PyType_GenericNew;
     if (PyType_Ready(&Lz4sd_t_Type) < 0)
         return;
 
