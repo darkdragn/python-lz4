@@ -38,6 +38,7 @@
 #include "lz4hc.h"
 #include "lz4io.h"
 #include "python-lz4.h"
+#include "structmember.h"
 
 #define MAX(a, b)               ((a) > (b) ? (a) : (b))
 #define throwWarn(msg)    PyErr_WarnEx(PyExc_UserWarning, msg, 1)
@@ -67,6 +68,88 @@ static inline char* add_extension(char *input) {
 }
 
 static const int hdr_size = sizeof(uint32_t);
+
+typedef struct {
+    PyObject_HEAD
+    LZ4_streamDecode_t lz4sd;
+} Lz4sd_t;
+
+static void Lz4sd_t_dealloc(Lz4sd_t* self)
+{
+    self->ob_type->tp_free((PyObject*)self);
+}
+
+static PyObject *Lz4sd_t_new(PyTypeObject *type, PyObject *args, PyObject *kwds)
+{
+    Lz4sd_t *self;
+    (void) args;
+    (void) kwds;
+
+    self = (Lz4sd_t *)type->tp_alloc(type, 0);
+    memset(&self->lz4sd, 0, sizeof(self->lz4sd));
+
+    return (PyObject *)self;
+}
+
+static PyMemberDef Lz4sd_t_members[] = {
+    {"lz4_streamDecode_t", T_UINT, offsetof(Lz4sd_t, lz4sd), 0, ""},
+    {NULL}  /* Sentinel */
+};
+
+/*static PyMethodDef Lz4sd_t_methods[] = {
+    {NULL}  / * Sentinel * /
+};*/
+
+static PyTypeObject Lz4sd_t_Type = {
+    PyObject_HEAD_INIT(NULL)
+    0,                         /*ob_size*/
+    "lz4.Lz4sd_t",             /*tp_name*/
+    sizeof(Lz4sd_t),           /*tp_basicsize*/
+    0,                         /*tp_itemsize*/
+    (destructor)Lz4sd_t_dealloc, /*tp_dealloc*/
+    0,                         /*tp_print*/
+    0,                         /*tp_getattr*/
+    0,                         /*tp_setattr*/
+    0,                         /*tp_compare*/
+    0,                         /*tp_repr*/
+    0,                         /*tp_as_number*/
+    0,                         /*tp_as_sequence*/
+    0,                         /*tp_as_mapping*/
+    0,                         /*tp_hash */
+    0,                         /*tp_call*/
+    0,                         /*tp_str*/
+    0,                         /*tp_getattro*/
+    0,                         /*tp_setattro*/
+    0,                         /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT, /*tp_flags*/
+    "Lz4sd_t for decode_continue",           /* tp_doc */
+    0,		                   /* tp_traverse */
+    0,		                   /* tp_clear */
+    0,		                   /* tp_richcompare */
+    0,		                   /* tp_weaklistoffset */
+    0,		                   /* tp_iter */
+    0,		                   /* tp_iternext */
+    0,                         /* tp_methods */
+    Lz4sd_t_members,           /* tp_members */
+    0,                         /* tp_getset */
+    0,                         /* tp_base */
+    0,                         /* tp_dict */
+    0,                         /* tp_descr_get */
+    0,                         /* tp_descr_set */
+    0,                         /* tp_dictoffset */
+    0,                         /* tp_init */
+    0,                         /* tp_alloc */
+    Lz4sd_t_new,                         /* tp_new */
+    0,                         /* tp_free */ 
+    0,                         /* tp_is_gc*/
+    0,                         /* tp_bases*/
+    0,                         /* tp_mro*/
+    0,                         /* tp_cache*/
+    0,                         /* tp_subclasses*/
+    0,                         /* tp_weaklis*/
+    0,                         /* tp_del*/
+    2
+};
 
 static PyObject *compress_with(compressor compress, PyObject *self, PyObject *args) {
     PyObject *result;
@@ -299,6 +382,10 @@ void initlz4(void)
     }
     st = GETSTATE(module);
 
+    //Lz4sd_t_Type.tp_new = PyType_GenericNew;
+    if (PyType_Ready(&Lz4sd_t_Type) < 0)
+        return;
+
     st->error = PyErr_NewException("lz4.Error", NULL, NULL);
     if (st->error == NULL) {
         Py_DECREF(module);
@@ -308,6 +395,7 @@ void initlz4(void)
     PyModule_AddStringConstant(module, "VERSION", VERSION);
     PyModule_AddStringConstant(module, "__version__", VERSION);
     PyModule_AddStringConstant(module, "LZ4_VERSION", LZ4_VERSION);
+    PyModule_AddObject(module, "Lz4sd_t", (PyObject *)&Lz4sd_t_Type);
 
 #if PY_MAJOR_VERSION >= 3
     return module;
