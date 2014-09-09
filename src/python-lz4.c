@@ -45,7 +45,8 @@
 
 typedef int (*compressor)(const char *source, char *dest, int isize);
 
-static int          LZ4S_GetBlockSize_FromBlockId (int id) { return (1 << (8 + (2 * id))); }
+static int LZ4S_GetBlockSize_FromBlockId (int id) { return (1 << (8 + (2 * id))); }
+
 static inline void store_le32(char *c, uint32_t x) {
     c[0] = x & 0xff;
     c[1] = (x >> 8) & 0xff;
@@ -96,10 +97,6 @@ static PyMemberDef Lz4sd_t_members[] = {
     {"lz4_streamDecode_t", T_UINT, offsetof(Lz4sd_t, lz4sd), 0, ""},
     {NULL}  /* Sentinel */
 };
-
-/*static PyMethodDef Lz4sd_t_methods[] = {
-    {NULL}  / * Sentinel * /
-};*/
 
 static PyTypeObject Lz4sd_t_Type = {
     PyObject_HEAD_INIT(NULL)
@@ -164,21 +161,14 @@ static PyObject *compress_with(compressor compress, PyObject *self, PyObject *ar
         return NULL;
 
     dest_size = hdr_size + LZ4_compressBound(source_size);
-    result = PyBytes_FromStringAndSize(NULL, dest_size);
-    if (result == NULL) {
-        return NULL;
-    }
-    dest = PyBytes_AS_STRING(result);
+    result = Py_None;
+
+    dest = (char*)calloc(dest_size, sizeof(char*));
     store_le32(dest, source_size);
+    
     if (source_size > 0) {
         int osize = compress(source, dest + hdr_size, source_size);
-        int actual_size = hdr_size + osize;
-        /* Resizes are expensive; tolerate some slop to avoid. */
-        if (actual_size < (dest_size / 4) * 3) {
-            _PyBytes_Resize(&result, actual_size);
-        } else {
-            Py_SIZE(result) = actual_size;
-        }
+        result = PyBytes_FromStringAndSize(dest, osize + hdr_size);
     }
     return result;
 }
@@ -247,24 +237,22 @@ static PyObject *py_lz4_uncompress_continue(PyObject *self, PyObject *args, PyOb
     }
 
     dest_size = LZ4S_GetBlockSize_FromBlockId(blkID);
-    //dest_size=load_le32(source);
     if (dest_size > INT_MAX) {
         PyErr_Format(PyExc_ValueError, "invalid size in header: 0x%x", dest_size);
         return NULL;
     }
     temp2=(Lz4sd_t *)lz4sd_t;
     temp = temp2->lz4sd;
-    //result = PyBytes_FromStringAndSize(NULL, dest_size);
     if (/*result != NULL && */dest_size > 0) {
         char* dest = (char*)malloc(dest_size);
         int osize = LZ4_decompress_safe_continue(&temp, source, dest, source_size, dest_size);
-        printf("%i\n", osize);
         result = PyBytes_FromStringAndSize(dest, osize);
         if (osize < 0) {
             PyErr_Format(PyExc_ValueError, "corrupt input at byte %d", -osize);
             Py_CLEAR(result);
         }
     }
+    else { return Py_None; }
 
     return result;
 }
@@ -317,7 +305,7 @@ static PyObject *py_lz4_compressFileAdv(PyObject *self, PyObject *args, \
     }
     
     if (!output) { output = add_extension(input); }
-    (overwrite == 0 && overwrite == 1) ? (void)LZ4IO_setOverwrite(overwrite) : \
+    (overwrite == 0 || overwrite == 1) ? (void)LZ4IO_setOverwrite(overwrite) : \
                                          throwWarn(oMsg);
     (3 < blockSizeID && blockSizeID < 8) ? (void)LZ4IO_setBlockSizeID(blockSizeID) : \
                                            throwWarn(bsMsg);
