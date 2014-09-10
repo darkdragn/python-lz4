@@ -119,6 +119,8 @@ class Lz4File:
                    if offset < b.get('decomp_e')][0]
         self.decomp =  self.read_block(blk = blk, setCur=False)
         self.pos = offset
+    def tell(self):
+        return self.pos
     @property
     def decompPos(self):
         return self.pos - self.curBlkData.get('decomp_e')
